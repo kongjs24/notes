@@ -1,0 +1,132 @@
+UNIX 시스템의 핵심 중의 하나인 Signal은 프로세스에게 어떤 Event의 발생을 알리기 위해 전달 되는 소프트웨어 인터럽트다.
+
+유닉스/리눅스 운영체제는 매우 다양한 종류의 Signal이 있으며 이러한 Signal은 각각의 의미를 가지고 사용되어진다.
+
+
+
+이번엔 Signal의 종류 및 개념에 대해 간단히 알아보고 다음에 Signal 처리 방식에 대해 천천히 알아보자
+
+
+
+우선 시그널의 정의 및 개념에 대해 알아보자.
+
+1. Signal은 어떤 Event가 발생했음을 알리기 위해 Process에게 전달되는 소프트웨어 인터럽트다.
+
+2. Signal을 발생 시키는 Event의 종류는 아래의 4가지 종류가 있다.
+
+2-1. Hardware Exception \(나누기 0 등\).
+
+2-2. Software condition \(alarm 시간, expire 등\).
+
+2-3. 단말기에서 발생하는 사용자 입력 \(^c, ^z 등\).
+
+2-4. kill 등과 같은 시스템 콜.
+
+3. Event에 의해서 Signal이 생성 되면 곧 Process에게 전달 된다.
+
+4. Process에게 Signal이 전달되면
+
+4-1. 기본 설정 실행\(ignore, terminate, terminate+core\).
+
+4-2. Signal Handler에 의한 Catch 후 로직 수행.
+
+4-3. 무시.
+
+5. Signal이 생성 되었으나 아직 전달 되지 않은 Signal은 Pending이라 함.
+
+6. Process는 signal mask를 사용해 특정 Signal을 Block/Unblock 시킬 수 있음.
+
+7. Process가 특정 Signal을 Block 시켜도 이 Signal은 생성되지만 전달 되지 않을뿐 Pending 됨.
+
+8. Block된 Signal은 Process가 그 Signal을 Unblock 할 때까지 혹은 해당 Signal에 대한 처리를 ignore로 변경 할때 까지 Pending됨.
+
+9. 어떤 Process에 여러개의 Signal이 생성되어 전달 되는 경우 순서는 보장할 수 없다.
+
+
+
+
+
+\* 주의 할 것은 UNIX/LINUX 시스템 마다 우리가 자주 사용하거나 보게 되는 기본적인 Signal을 제외하고 \(SIGKILL\(9\), SIGSEGV\(11\), SIGTERM\(15\) 등등등\) 기타 Signal 번호는 OS 환경에 설치된 signal.h에 define 선언 되어 있는 것 마다 차이가 있다.
+
+\* 각 Signal 번호는 어짜피 signal.h에 define 되어 있므로 궁금하면 /usr/include 에 있는 signal.h 파일을 참고하는 것이 좋다. \(Signal Number 정의는 UNIX /usr/include/sys/signal.h에서 확인하고 Linux는 /usr/include/bits/signum.h 참고\)
+
+\* 혹은 직관적으로 확인하고자 한다면 프롬프트창에서 kill -l 을 치면 시스템 Signal 종류에 대해서 확인 할 수 있다.
+
+
+
+기본적인 Signal과 은 아래와 같다. \(시스템 마다 종류나 숫자는 차이가 있음\)
+
+
+
+1. SIGHUP: 연결된terminal이hangup하였을때\(terminate\)
+
+2. SIGINT: interrupt key\(^C\)를입력하였을때\(terminate\)
+
+3. SIGQUIT: quit key\(^\\)를입력하였을때\(terminate+core\)
+
+4. SIGILL: illegal instruction을수행하였을때\(terminate+core\)
+
+5. SIGTRAP: implementation defined hardware fault \(terminate+core\)
+
+6. SIGABRT: abort시스템호출을불렀을때\(terminate+core\)
+
+7. SIGBUS: implementation defined hardware fault \(terminate+core\)
+
+8. SIGFPE: arithmetic exception, /0, floating-point overflow \(terminate+core\)
+
+9. SIGKILL: process를kill하기위핚signal, catch 혹은ignore될수없는signal임\(terminate\)
+
+10. SIGUSR1: user defined signal 1 \(terminate\)
+
+11. SIGSEGV: invalid memory reference \(terminate+core\)
+
+12. SIGUSR2: user defined signal 2 \(terminate\)
+
+13. SIGPIPE: reader가terminate된pipe에write핚경우발생\(terminate\)
+
+14. SIGALRM: alarm시스템호출후timer가expire된경우\(terminate\)
+
+15. SIGTERM: kill시스템호출이보내는software termination signal \(terminate\)
+
+16. SIGCHLD: child가stop or exit되었을때parent에게전달되는신호\(ignore\)
+
+17. SIGCONT: continue a stopped process \(continue/ignore\)
+
+18. SIGSTOP: sendable stop signal, cannot be caught or ignored \(stop process\)
+
+19. SIGTSTP: stop key\(^Z\)를입력하였을때\(stop process\)
+
+20. SIGTTIN: background process가control tty로부터read핛경우\(stop process\)
+
+21. SIGTTOU: background process가control tty로write핛경우\(stop process\)
+
+22. SIGURG: urgent condition on IO, socket의OOB data \(ignore\)
+
+23. SIGXCPU: exceeded CPU time limit \(terminate+core/ignore\)
+
+24. SIGXFSZ: exceeded file size limit \(terminate+core/ignore\)
+
+25. SIGVTALRM: virtual time alarm, setitimer, \(terminate\)
+
+26. SIGPROF: profiling time alarm, setitimer, \(terminate\)
+
+27. SIGWINCH: terminal window size changed, \(ignore\)
+
+28. SIGIO: 어떤fd에서asynchronous I/O event가발생하였을경우\(terminate/ignore\)
+
+29. SIGPWR: system power fail \(terminate/ignore\)
+
+30. SIGSYS: bad argument to system call \(terminate+core\)
+
+
+
+기본적인 Signal 처리 방식은 아래와 같다.
+
+1. SIG\_DFL \(SIG\_PF\)0
+
+2. SIG\_ERR \(SIG\_PF\)-1
+
+3. SIG\_IGN \(SIG\_PF\)1
+
+4. SIG\_HOLD \(SIG\_PF\)2
+

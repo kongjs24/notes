@@ -1,0 +1,14 @@
+1. Instance Variables: These variables are serialized, so during deserialization we will get back the serialized state.
+
+2. Static Variables: These variables are not serialized, So during deserialization static variable value will loaded from the class.\(Current value will be loaded.\)
+
+3. transient Variables: transientvariables are not serialized, so during deserialization those variables will be initialized with corresponding default values \(ex: for objects null, int 0\).
+
+4. Super class variables: If super class also implemented Serializable interface then those variables will be serialized, otherwise it won't serialize the super class variables. and while deserializing, JVM will run default constructor in super class and populates the default values. Same thing will happen for all superclasses.
+
+
+
+\* serializable을extends하고있는super class를확장하여sub class를만들었다면sub class또한serializable하다.
+
+\* Address클래스와serializable을구현한Student클래스가있다고가정하자. Student클래스에서Address클래스를사용하고있을때Student클래스는serializable하지않다\(NotSerializableException발생\).
+
