@@ -15,7 +15,5 @@
 * [공변\(covariant\), 반공변\(contravariant\), 무공변\(invariant\)](acf5-bcc028-covariant-bc18-acf5-bcc028-contravariant-bb34-acf5-bcc028-invariant.md)
 * [Concurrency vs. Parallelism](concurrency-vs-parallelism.md)
 
-* 구현 패턴
-
 
 
